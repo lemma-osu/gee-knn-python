@@ -1,20 +1,12 @@
 import ee
 
 from . import utils
-from .cca import cca
+from .ccora import ccora
 
 
-# TODO: Maybe make dataclass if GEE can handle that
-# TODO: Don't assign self variables in train
-
-
-class GNN:
-    def __init__(
-        self, k=1, spp_transform="SQRT", num_cca_axes=8, max_duplicates=None
-    ):
+class MSN:
+    def __init__(self, k=1, max_duplicates=None):
         self.k = k
-        self.spp_transform = spp_transform
-        self.num_cca_axes = num_cca_axes
         self.max_duplicates = (
             max_duplicates if max_duplicates is not None else 5
         )
@@ -38,84 +30,20 @@ class GNN:
         spp_arr = utils.fc_to_array(fc, spp_columns)
         env_arr = utils.fc_to_array(fc, self.env_columns)
 
-        # Remove spp columns that are zero
-        col_sums = spp_arr.reduce(ee.Reducer.sum(), [0])
-        mask = col_sums.neq(0)
-        spp_arr = spp_arr.mask(mask)
-
         # Get means and SDs for each environmental variable
         self.env_means = utils.column_means(env_arr)
         self.env_sds = utils.column_sds(env_arr)
 
-        # Create a normalized environmental matrix based on column statistics
+        # Create normalized matrices of both spp and env matrices
+        spp_normalized = utils.normalize_arr(spp_arr)
         env_normalized = utils.normalize_arr(env_arr)
 
-        # Remove env columns that are zero - no variation in environment
-        col_sums = env_normalized.reduce(ee.Reducer.sum(), [0])
-        mask = col_sums.neq(0)
-        env_normalized = env_normalized.mask(mask)
-        self.env_means = self.env_means.mask(mask)
-        self.env_sds = self.env_sds.mask(mask)
+        # Run Canonical correlation analysis
+        self.projector = ccora(env_normalized, spp_normalized)
+        plot_scores = env_normalized.matrixMultiply(self.projector)
 
-        # Remove names from self.env_columns if removed from
-        # env_normalized
-        def remove_name(item):
-            item = ee.List(item)
-            in_matrix = ee.Number(item.get(0))
-            name = ee.String(item.get(1))
-            return ee.Algorithms.If(in_matrix.eq(1), name, "remove")
-
-        self.env_columns = (
-            mask.neq(0)
-            .project([1])
-            .toList()
-            .zip(self.env_columns)
-            .map(remove_name)
-            .filter(ee.Filter.neq("item", "remove"))
-        )
-
-        # Optionally, apply a transform to the species matrix
-        spp_transformed = None
-        if self.spp_transform == "SQRT":
-            spp_transformed = spp_arr.pow(0.5)
-        elif self.spp_transform == "LOG":
-            spp_transformed = spp_arr.log()
-        else:
-            spp_transformed = spp_arr
-
-        # Run CCA
-        cca_obj = cca(spp_transformed, env_normalized)
-
-        # Adjust CCA data to account for number of axes
-        num_axes = cca_obj.get("num_cca_axes")
-        self.num_cca_axes = ee.Number(
-            ee.Algorithms.If(
-                ee.Number(self.num_cca_axes).lte(num_axes),
-                self.num_cca_axes,
-                num_axes,
-            )
-        )
-        self.cca_obj = ee.Dictionary(
-            {
-                "coeff": ee.Array(cca_obj.get("coeff")),
-                "centers": ee.Array(cca_obj.get("centers")),
-                "eig_matrix": (
-                    ee.Array(cca_obj.get("eig_matrix"))
-                    .slice(0, 0, self.num_cca_axes)
-                    .slice(1, 0, self.num_cca_axes)
-                ),
-                "plot_scores": (
-                    ee.Array(cca_obj.get("plot_scores"))
-                    .slice(1, 0, self.num_cca_axes)
-                    .toList()
-                ),
-            }
-        )
-
-        # Convert CCA plot scores to a feature collection for classification
-        self.fc = utils.scores_to_fc(
-            ids, self.cca_obj.get("plot_scores"), self.id_field
-        )
+        # Convert plot scores to a feature collection for classification
+        self.fc = utils.scores_to_fc(ids, plot_scores.toList(), self.id_field)
 
         # Train the classifier within the transformed space
         self.clf = ee.Classifier.minimumDistance(
@@ -141,13 +69,9 @@ class GNN:
             ee.Image(self.env_sds)
         )
 
-        # Center the variables based on species weights, multiply by
-        # the CCA coefficients and weight based on the eigenvalues matrix
+        # Multiply by the MSN coefficients
         transformed_image = (
-            normalized.subtract(ee.Image(ee.Array(self.cca_obj.get("centers"))))
-            .matrixMultiply(ee.Array(self.cca_obj.get("coeff")))
-            .arraySlice(1, 0, self.num_cca_axes)
-            .matrixMultiply(ee.Array(self.cca_obj.get("eig_matrix")))
+            normalized.matrixMultiply(self.projector)
             .arrayProject([1])
             .arrayFlatten([self.fc.get("axis_names")])
         )
@@ -180,12 +104,7 @@ class GNN:
         transformed_arr = (
             env_arr.subtract(self.env_means.repeat(0, fc.size()))
             .divide(self.env_sds.repeat(0, fc.size()))
-            .subtract(
-                ee.Array(self.cca_obj.get("centers")).repeat(0, fc.size())
-            )
-            .matrixMultiply(ee.Array(self.cca_obj.get("coeff")))
-            .slice(1, 0, self.num_cca_axes)
-            .matrixMultiply(ee.Array(self.cca_obj.get("eig_matrix")))
+            .matrixMultiply(self.projector)
             .toList()
         )
 
