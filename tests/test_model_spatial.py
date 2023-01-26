@@ -11,19 +11,13 @@ def k():
 
 
 @pytest.fixture
-def training_no_spp():
+def training_data():
     return {
         "fc": sample_data.fc,
         "id_field": sample_data.id_field,
+        "spp_columns": sample_data.spp_columns,
         "env_columns": sample_data.env_columns,
     }
-
-
-@pytest.fixture
-def training_spp(training_no_spp):
-    d = training_no_spp.copy()
-    d.update(spp_columns=sample_data.spp_columns)
-    return d
 
 
 @pytest.fixture
@@ -80,40 +74,40 @@ def run_method(kls, options, training_data, check_img):
     )
 
 
-def test_raw(k, training_no_spp, raw_check_img):
+def test_raw(k, training_data, raw_check_img):
     # RAW - exactly matching for k=5
-    matches = run_method(Raw, {"k": k}, training_no_spp, raw_check_img)
+    matches = run_method(Raw, {"k": k}, training_data, raw_check_img)
     assert all(match >= 360000 for match in matches)
 
 
-def test_euc(k, training_no_spp, euc_check_img):
+def test_euc(k, training_data, euc_check_img):
     # EUC - exactly matching for k=2, NN3, NN4 and NN5 don't match
     # Bands 3, 4, 5 have at most two pixels (of 360,000) different
-    matches = run_method(Euclidean, {"k": k}, training_no_spp, euc_check_img)
+    matches = run_method(Euclidean, {"k": k}, training_data, euc_check_img)
     assert all(match >= 359998 for match in matches)
 
 
-def test_mah(k, training_no_spp, mah_check_img):
+def test_mah(k, training_data, mah_check_img):
     # MAH - not currently matching for any band
     # All bands have at least 359710 / 360000 pixels (99.92%) with no difference
-    matches = run_method(Mahalanobis, {"k": k}, training_no_spp, mah_check_img)
+    matches = run_method(Mahalanobis, {"k": k}, training_data, mah_check_img)
     assert all(match >= 359710 for match in matches)
 
 
-def test_msn(k, training_spp, msn_check_img):
+def test_msn(k, training_data, msn_check_img):
     # MSN - not currently matching for any band
     # All bands have at least 359828 / 360000 pixels (99.95%) with no difference
-    matches = run_method(MSN, {"k": k}, training_spp, msn_check_img)
+    matches = run_method(MSN, {"k": k}, training_data, msn_check_img)
     assert all(match >= 359828 for match in matches)
 
 
-def test_gnn(k, training_spp, gnn_check_img):
+def test_gnn(k, training_data, gnn_check_img):
     # GNN - not currently matching for any band
     # All bands have at least 352272 / 360000 pixels (97.85%) with no difference
     matches = run_method(
         GNN,
         {"k": k, "spp_transform": "SQRT", "num_cca_axes": 16},
-        training_spp,
+        training_data,
         gnn_check_img,
     )
     assert all(match >= 352272 for match in matches)

@@ -14,7 +14,7 @@ class Euclidean:
     def k_nearest(self):
         return self.k + self.max_duplicates
 
-    def train(self, fc, id_field, env_columns):
+    def train(self, fc, id_field, env_columns, **kwargs):
         fc = ee.FeatureCollection(fc)
         self.id_field = ee.String(id_field)
         self.env_columns = ee.List(env_columns)
