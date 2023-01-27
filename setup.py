@@ -12,6 +12,7 @@ setup(
     description="Python based nearest neighbor mapping in GEE",
     install_requires=[
         "earthengine-api",
+        "pydantic",
     ],
     # extras_require={"test": ["pytest", "pytest-cov", "tox"]},
 )

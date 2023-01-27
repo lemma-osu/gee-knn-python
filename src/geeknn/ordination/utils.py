@@ -1,34 +1,41 @@
+from typing import Any
+
 import ee
+from pydantic import BaseModel
 
 
-def set_colocation_fc(fc, location_field, plot_field):
-    join = ee.Join.saveAll(
-        {
-            "matchesKey": "matches",
-            "ordering": plot_field,
-            "ascending": True,
-        }
-    )
-    fltr = ee.Filter.equals(
-        {
-            "leftField": location_field,
-            "rightField": location_field,
-        }
-    )
-    applied = join.apply(fc, fc, fltr)
+class Colocation(BaseModel):
+    fc: ee.FeatureCollection
+    location_field: str
+    plot_field: str
 
-    def get_colocated_list(f):
-        def get_colocated_feature(f2):
-            return ee.Feature(f).get(plot_field)
+    class Config:
+        arbitrary_types_allowed = True
 
-        colocated = ee.List(f.get("matches")).map(get_colocated_feature)
-        return (
-            ee.Feature(None)
-            .set(plot_field, f.get(plot_field))
-            .set("colocated", colocated)
+    def get_colocation_fc(self) -> ee.FeatureCollection:
+        join = ee.Join.saveAll(
+            matchesKey="matches",
+            ordering=self.plot_field,
+            ascending=True,
         )
+        fltr = ee.Filter.equals(
+            leftField=self.location_field,
+            rightField=self.location_field,
+        )
+        applied = join.apply(self.fc, self.fc, fltr)
 
-    return applied.map(get_colocated_list)
+        def get_colocated_list(f: ee.Feature) -> ee.Feature:
+            def get_colocated_feature(f2: ee.Feature) -> ee.Feature:
+                return ee.Feature(f).get(self.plot_field)
+
+            colocated = ee.List(f.get("matches")).map(get_colocated_feature)
+            return (
+                ee.Feature(None)
+                .set(self.plot_field, f.get(self.plot_field))
+                .set("colocated", colocated)
+            )
+
+        return applied.map(get_colocated_list)
 
 
 # Extract arrays from feature classes for the specified columns
@@ -74,12 +81,10 @@ def normalize_arr(arr):
     )
 
 
-def filter_neighbors(neighbor_fc, colocation_obj, id_field):
-    colocation_fc = set_colocation_fc(
-        colocation_obj.fc,
-        colocation_obj.location_field,
-        colocation_obj.plot_field,
-    )
+def filter_neighbors(
+    neighbor_fc: ee.FeatureCollection, colocation_obj: Colocation, id_field: str
+):
+    colocation_fc = colocation_obj.get_colocation_fc()
     fltr = ee.Filter.equals(
         leftField=id_field,
         rightField=colocation_obj.plot_field,
@@ -101,7 +106,9 @@ def filter_neighbors(neighbor_fc, colocation_obj, id_field):
     return applied.map(get_colocated)
 
 
-def return_k_neighbors(neighbor_fc, k):
+def return_k_neighbors(
+    neighbor_fc: ee.FeatureCollection, k: int
+) -> Any:  # want ee.Array
     def return_k_neighbor_for_feature(lst):
         return ee.List(lst).slice(0, ee.Number(k))
 
