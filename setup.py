@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="gee-knn",
+    name="gee-knn-python",
     version="0.1.0",
-    url="http://github.com/lemma-osu/pygeeknn/",
+    url="http://github.com/lemma-osu/gee-knn-python/",
     author="LEMMA group @ Oregon State University",
     author_email="matt.gregory@oregonstate.edu",
     packages=find_packages("src"),
