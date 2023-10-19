@@ -6,9 +6,7 @@ from . import utils
 class Euclidean:
     def __init__(self, k=1, max_duplicates=None):
         self.k = k
-        self.max_duplicates = (
-            max_duplicates if max_duplicates is not None else 5
-        )
+        self.max_duplicates = max_duplicates if max_duplicates is not None else 5
 
     @property
     def k_nearest(self):
@@ -20,11 +18,7 @@ class Euclidean:
         self.env_columns = ee.List(env_columns)
 
         # Create the initial arrays from the feature collection
-        ids = (
-            utils.fc_to_array(fc, ee.List([self.id_field]))
-            .project([0])
-            .toList()
-        )
+        ids = utils.fc_to_array(fc, ee.List([self.id_field])).project([0]).toList()
         env_arr = utils.fc_to_array(fc, self.env_columns)
 
         # Get means and SDs for each environmental variable
@@ -104,9 +98,7 @@ class Euclidean:
         def row_to_properties(row):
             return ee.Feature(None, ee.Dictionary.fromLists(ax_names, row))
 
-        transformed_fc = ee.FeatureCollection(
-            transformed_arr.map(row_to_properties)
-        )
+        transformed_fc = ee.FeatureCollection(transformed_arr.map(row_to_properties))
 
         # Retrieve the nearest neighbors in this space
         neighbor_fc = transformed_fc.classify(

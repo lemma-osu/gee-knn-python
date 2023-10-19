@@ -1,3 +1,59 @@
-[tool.black]
-line-length = 80
-preview = true
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gee-knn-python"
+dynamic = ["version"]
+description = "Python based nearest neighbor mapping in GEE"
+readme = "README.md"
+license = ""
+requires-python = ">=3.8"
+authors = [{ name = "Matt Gregory", email = "matt.gregory@oregonstate.edu" }]
+dependencies = ["earthengine-api", "pydantic"]
+
+[project.urls]
+Homepage = "https://github.com/lemma-osu/gee-knn-python"
+Source = "https://github.com/lemma-osu/gee-knn-python"
+
+[tool.hatch.version]
+path = "src/geeknn/__about__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/geeknn"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src"]
+
+[tool.hatch.envs.default]
+dependencies = ["pre-commit"]
+
+[tool.hatch.envs.test]
+dependencies = ["pytest", "pytest-cov"]
+
+[tool.hatch.envs.test.scripts]
+all = "pytest {args}"
+coverage = "pytest --cov=src/geeknn {args}"
+
+[tool.ruff]
+target-version = "py38"
+select = [
+    "E",
+    "I",
+    "F",
+    "B",
+    "FA",
+    "UP",
+    "ISC",
+    "PT",
+    "NPY",
+    "Q",
+    "RET",
+    "SIM",
+    "PERF",
+]
+fix = true
+show-fixes = true
+
+[tool.ruff.isort]
+known-first-party = ["geeknn"]

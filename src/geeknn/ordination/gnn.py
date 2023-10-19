@@ -3,21 +3,16 @@ import ee
 from . import utils
 from .cca import cca
 
-
 # TODO: Maybe make dataclass if GEE can handle that
 # TODO: Don't assign self variables in train
 
 
 class GNN:
-    def __init__(
-        self, k=1, spp_transform="SQRT", num_cca_axes=8, max_duplicates=None
-    ):
+    def __init__(self, k=1, spp_transform="SQRT", num_cca_axes=8, max_duplicates=None):
         self.k = k
         self.spp_transform = spp_transform
         self.num_cca_axes = num_cca_axes
-        self.max_duplicates = (
-            max_duplicates if max_duplicates is not None else 5
-        )
+        self.max_duplicates = max_duplicates if max_duplicates is not None else 5
 
     @property
     def k_nearest(self):
@@ -30,11 +25,7 @@ class GNN:
         self.env_columns = ee.List(env_columns)
 
         # Create the initial arrays from the feature collection
-        ids = (
-            utils.fc_to_array(fc, ee.List([self.id_field]))
-            .project([0])
-            .toList()
-        )
+        ids = utils.fc_to_array(fc, ee.List([self.id_field])).project([0]).toList()
         spp_arr = utils.fc_to_array(fc, spp_columns)
         env_arr = utils.fc_to_array(fc, self.env_columns)
 
@@ -180,9 +171,7 @@ class GNN:
         transformed_arr = (
             env_arr.subtract(self.env_means.repeat(0, fc.size()))
             .divide(self.env_sds.repeat(0, fc.size()))
-            .subtract(
-                ee.Array(self.cca_obj.get("centers")).repeat(0, fc.size())
-            )
+            .subtract(ee.Array(self.cca_obj.get("centers")).repeat(0, fc.size()))
             .matrixMultiply(ee.Array(self.cca_obj.get("coeff")))
             .slice(1, 0, self.num_cca_axes)
             .matrixMultiply(ee.Array(self.cca_obj.get("eig_matrix")))
@@ -196,9 +185,7 @@ class GNN:
         def row_to_properties(row):
             return ee.Feature(None, ee.Dictionary.fromLists(ax_names, row))
 
-        transformed_fc = ee.FeatureCollection(
-            transformed_arr.map(row_to_properties)
-        )
+        transformed_fc = ee.FeatureCollection(transformed_arr.map(row_to_properties))
 
         # Retrieve the nearest neighbors in this space
         neighbor_fc = transformed_fc.classify(

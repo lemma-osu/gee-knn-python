@@ -1,16 +1,16 @@
-import pytest
 import ee
+import pytest
 
+from geeknn.ordination import GNN, MSN, Euclidean, Mahalanobis, Raw
 from geeknn.test_data import setup as sample_data
-from geeknn.ordination import Raw, Euclidean, Mahalanobis, MSN, GNN
 
 
-@pytest.fixture
+@pytest.fixture()
 def k():
     return 5
 
 
-@pytest.fixture
+@pytest.fixture()
 def training_data():
     return {
         "fc": sample_data.fc,
@@ -20,27 +20,27 @@ def training_data():
     }
 
 
-@pytest.fixture
+@pytest.fixture()
 def raw_check_img():
     return ee.Image("users/gregorma/gee-knn/test-check/raw_neighbors_600")
 
 
-@pytest.fixture
+@pytest.fixture()
 def euc_check_img():
     return ee.Image("users/gregorma/gee-knn/test-check/euc_neighbors_600")
 
 
-@pytest.fixture
+@pytest.fixture()
 def mah_check_img():
     return ee.Image("users/gregorma/gee-knn/test-check/mah_neighbors_600")
 
 
-@pytest.fixture
+@pytest.fixture()
 def msn_check_img():
     return ee.Image("users/gregorma/gee-knn/test-check/msn_neighbors_600")
 
 
-@pytest.fixture
+@pytest.fixture()
 def gnn_check_img():
     return ee.Image("users/gregorma/gee-knn/test-check/gnn_neighbors_600")
 
@@ -53,9 +53,7 @@ def run_method(kls, options, training_data, check_img):
     model = model.train(**training_data)
 
     # Spatially predict the model
-    nn = model.predict(
-        env_image=sample_data.env_img, mode="CLASSIFICATION"
-    ).retile(32)
+    nn = model.predict(env_image=sample_data.env_img, mode="CLASSIFICATION").retile(32)
 
     # Get the per-pixel difference
     diff_nn = nn.subtract(check_img).abs()
