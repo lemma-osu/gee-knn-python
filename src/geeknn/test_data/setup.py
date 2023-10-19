@@ -5,9 +5,9 @@ ee.Initialize()
 # Bring in sample species (spp) and environmental (env) feature classes
 # and set the field that holds the plot IDs.  For the environmental matrix,
 # this could be done at runtime.
-spp = ee.FeatureCollection(
-    "users/gregorma/gee-knn/attribute_tables/test_species"
-).sort("FCID")
+spp = ee.FeatureCollection("users/gregorma/gee-knn/attribute_tables/test_species").sort(
+    "FCID"
+)
 env = ee.FeatureCollection(
     "users/gregorma/gee-knn/attribute_tables/test_environment"
 ).sort("FCID")
@@ -57,6 +57,4 @@ colocation_fc = ee.FeatureCollection(
     "users/gregorma/gee-knn/attribute_tables/fcid_x_locid_eco"
 )
 
-env_img = ee.Image("users/gregorma/gee-knn/test-input/all_600").rename(
-    env_columns
-)
+env_img = ee.Image("users/gregorma/gee-knn/test-input/all_600").rename(env_columns)

@@ -1,8 +1,8 @@
 import ee
 
-ee.Initialize()
-
 from . import utils
+
+ee.Initialize()
 
 
 def ccora(X, Y):
@@ -36,7 +36,6 @@ def ccora(X, Y):
     # Solve Rx = V for QRY
     R = ee.Array(QRY.get("R")).slice(0, 0, n_cols_y).slice(1, 0, n_cols_y)
     QR = R.matrixQRDecomposition()
-    y_coef = ee.Array(QR.get("R")).matrixSolve(ee.Array(Z.get("V")))
 
     # Derive the cscal scalar
     col = X.matrixMultiply(x_coef.slice(1, 0, 1))

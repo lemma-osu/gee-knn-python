@@ -16,6 +16,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up Earth Engine
+        env:
+          EARTH_ENGINE_CREDENTIALS: ${{ secrets.EARTH_ENGINE_CREDENTIALS }}
+        run: |
+          echo "$EARTH_ENGINE_CREDENTIALS" > /home/runner/.config/earthengine/credentials
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:

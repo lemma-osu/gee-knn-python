@@ -1,16 +1,16 @@
 import pytest
 
-from geeknn.test_data import setup as sample_data
-from geeknn.ordination import Raw, Euclidean, Mahalanobis, MSN, GNN
+from geeknn.ordination import GNN, MSN, Euclidean, Mahalanobis, Raw
 from geeknn.ordination.utils import Colocation
+from geeknn.test_data import setup as sample_data
 
 
-@pytest.fixture
+@pytest.fixture()
 def k():
     return 5
 
 
-@pytest.fixture
+@pytest.fixture()
 def training_data():
     return {
         "fc": sample_data.fc,
@@ -20,7 +20,7 @@ def training_data():
     }
 
 
-@pytest.fixture
+@pytest.fixture()
 def colocation_obj():
     return Colocation(
         fc=sample_data.colocation_fc, location_field="LOC_ID", plot_field="FCID"
@@ -85,9 +85,7 @@ def test_gnn_dependent(k, training_data):
 
 
 def test_raw_independent(k, training_data, colocation_obj):
-    neighbors = run_method(
-        Raw, {"k": k}, training_data, colocation_obj=colocation_obj
-    )
+    neighbors = run_method(Raw, {"k": k}, training_data, colocation_obj=colocation_obj)
     obs = get_obs_ids(training_data["fc"])
     prd = [x[0] for x in neighbors.getInfo()]
     assert all(x != y for x, y in zip(obs, prd))
@@ -112,9 +110,7 @@ def test_mah_independent(k, training_data, colocation_obj):
 
 
 def test_msn_independent(k, training_data, colocation_obj):
-    neighbors = run_method(
-        MSN, {"k": k}, training_data, colocation_obj=colocation_obj
-    )
+    neighbors = run_method(MSN, {"k": k}, training_data, colocation_obj=colocation_obj)
     obs = get_obs_ids(training_data["fc"])
     prd = [x[0] for x in neighbors.getInfo()]
     assert all(x != y for x, y in zip(obs, prd))

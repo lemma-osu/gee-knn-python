@@ -1,16 +1,15 @@
 from typing import Any
 
 import ee
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Colocation(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     fc: ee.FeatureCollection
     location_field: str
     plot_field: str
-
-    class Config:
-        arbitrary_types_allowed = True
 
     def get_colocation_fc(self) -> ee.FeatureCollection:
         join = ee.Join.saveAll(
@@ -60,9 +59,7 @@ def scores_to_fc(ids, scores, id_field):
     n_cols = ee.List(ee.List(scores).get(0)).size()
     axis_names = ee.List.sequence(1, n_cols).map(axis_name)
 
-    fc = ee.FeatureCollection(
-        ee.List.sequence(0, n_rows.subtract(1)).map(axis_score)
-    )
+    fc = ee.FeatureCollection(ee.List.sequence(0, n_rows.subtract(1)).map(axis_score))
     return ee.Dictionary({"fc": fc, "axis_names": axis_names})
 
 
@@ -113,7 +110,5 @@ def return_k_neighbors(
         return ee.List(lst).slice(0, ee.Number(k))
 
     return ee.Array(
-        neighbor_fc.aggregate_array("neighbors").map(
-            return_k_neighbor_for_feature
-        )
+        neighbor_fc.aggregate_array("neighbors").map(return_k_neighbor_for_feature)
     )
