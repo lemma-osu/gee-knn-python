@@ -20,6 +20,7 @@ jobs:
         env:
           EARTH_ENGINE_CREDENTIALS: ${{ secrets.EARTH_ENGINE_CREDENTIALS }}
         run: |
+          mkdir -p /home/runner/.config/earthengine
           echo "$EARTH_ENGINE_CREDENTIALS" > /home/runner/.config/earthengine/credentials
 
       - name: Set up Python ${{ matrix.python-version }}
