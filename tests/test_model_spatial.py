@@ -3,7 +3,7 @@ import pytest
 
 from geeknn.ordination import GNN, MSN, Euclidean, Mahalanobis, Raw
 
-from .setup import env_columns, env_img, fc, id_field, spp_columns
+from .setup import get_covariate_image, get_training_data
 
 ESTIMATOR_PARAMETERS = {
     "raw": (Raw, {}, 360000),
@@ -16,21 +16,23 @@ ESTIMATOR_PARAMETERS = {
 
 @pytest.fixture()
 def training_data():
-    return {
-        "fc": fc,
-        "id_field": id_field,
-        "spp_columns": spp_columns,
-        "env_columns": env_columns,
-    }
+    return get_training_data()
+
+
+@pytest.fixture()
+def env_image():
+    return get_covariate_image()
 
 
 def get_check_img(prefix: str) -> ee.Image:
     return ee.Image(f"users/gregorma/gee-knn/test-check/{prefix}_neighbors_600")
 
 
-def run_method(kls, options, training_data, check_img):
+def run_method(kls, options, training_data, env_image, check_img):
+    """Run predict on the given estimator, difference it against a
+    reference images, and return the frequency of zero differences"""
     model = kls(**options).train(**training_data)
-    nn = model.predict(env_image=env_img, mode="CLASSIFICATION").retile(32)
+    nn = model.predict(env_image=env_image, mode="CLASSIFICATION").retile(32)
     diff_nn = nn.subtract(check_img).abs()
     frequency = diff_nn.reduceRegion(
         reducer=ee.Reducer.frequencyHistogram(),
@@ -51,9 +53,11 @@ def run_method(kls, options, training_data, check_img):
     ids=ESTIMATOR_PARAMETERS.keys(),
 )
 @pytest.mark.parametrize("k", [5])
-def test_image_match(estimator_parameter, k, training_data):
+def test_image_match(estimator_parameter, k, training_data, env_image):
+    """Test that predicted kNN images match expected images for the given
+    number of expected_matches"""
     method, (est, options, expected_matches) = estimator_parameter
     options["k"] = k
     check_img = get_check_img(method)
-    matches = run_method(est, options, training_data, check_img)
+    matches = run_method(est, options, training_data, env_image, check_img)
     assert all(match >= expected_matches for match in matches)
