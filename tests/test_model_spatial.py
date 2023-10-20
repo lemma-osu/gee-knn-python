@@ -2,64 +2,39 @@ import ee
 import pytest
 
 from geeknn.ordination import GNN, MSN, Euclidean, Mahalanobis, Raw
-from geeknn.test_data import setup as sample_data
 
+from .setup import get_covariate_image, get_training_data
 
-@pytest.fixture()
-def k():
-    return 5
+ESTIMATOR_PARAMETERS = {
+    "raw": (Raw, {}, 360000),
+    "euc": (Euclidean, {}, 359998),
+    "mah": (Mahalanobis, {}, 359710),
+    "msn": (MSN, {}, 359828),
+    "gnn": (GNN, {"spp_transform": "SQRT", "num_cca_axes": 16}, 352272),
+}
 
 
 @pytest.fixture()
 def training_data():
-    return {
-        "fc": sample_data.fc,
-        "id_field": sample_data.id_field,
-        "spp_columns": sample_data.spp_columns,
-        "env_columns": sample_data.env_columns,
-    }
+    return get_training_data()
 
 
 @pytest.fixture()
-def raw_check_img():
-    return ee.Image("users/gregorma/gee-knn/test-check/raw_neighbors_600")
+def env_image():
+    return get_covariate_image()
 
 
-@pytest.fixture()
-def euc_check_img():
-    return ee.Image("users/gregorma/gee-knn/test-check/euc_neighbors_600")
+def get_check_img(prefix: str) -> ee.Image:
+    return ee.Image(f"users/gregorma/gee-knn/test-check/{prefix}_neighbors_600")
 
 
-@pytest.fixture()
-def mah_check_img():
-    return ee.Image("users/gregorma/gee-knn/test-check/mah_neighbors_600")
-
-
-@pytest.fixture()
-def msn_check_img():
-    return ee.Image("users/gregorma/gee-knn/test-check/msn_neighbors_600")
-
-
-@pytest.fixture()
-def gnn_check_img():
-    return ee.Image("users/gregorma/gee-knn/test-check/gnn_neighbors_600")
-
-
-def run_method(kls, options, training_data, check_img):
-    # Create the model
-    model = kls(**options)
-
-    # Train the model
-    model = model.train(**training_data)
-
-    # Spatially predict the model
-    nn = model.predict(env_image=sample_data.env_img, mode="CLASSIFICATION").retile(32)
-
-    # Get the per-pixel difference
+def run_method(kls, options, training_data, env_image, check_img):
+    """Run predict on the given estimator, difference it against a
+    reference images, and return the frequency of zero differences"""
+    model = kls(**options).train(**training_data)
+    nn = model.predict(env_image=env_image, mode="CLASSIFICATION").retile(32)
     diff_nn = nn.subtract(check_img).abs()
-
-    # Get a frequency histogram of difference values
-    fh = diff_nn.reduceRegion(
+    frequency = diff_nn.reduceRegion(
         reducer=ee.Reducer.frequencyHistogram(),
         scale=30,
         maxPixels=1e9,
@@ -67,45 +42,22 @@ def run_method(kls, options, training_data, check_img):
     )
     return (
         ee.List(diff_nn.bandNames())
-        .map(lambda b: (ee.Number(ee.Dictionary(fh.get(b)).get("0.0"))))
+        .map(lambda b: (ee.Number(ee.Dictionary(frequency.get(b)).get("0.0"))))
         .getInfo()
     )
 
 
-def test_raw(k, training_data, raw_check_img):
-    # RAW - exactly matching for k=5
-    matches = run_method(Raw, {"k": k}, training_data, raw_check_img)
-    assert all(match >= 360000 for match in matches)
-
-
-def test_euc(k, training_data, euc_check_img):
-    # EUC - exactly matching for k=2, NN3, NN4 and NN5 don't match
-    # Bands 3, 4, 5 have at most two pixels (of 360,000) different
-    matches = run_method(Euclidean, {"k": k}, training_data, euc_check_img)
-    assert all(match >= 359998 for match in matches)
-
-
-def test_mah(k, training_data, mah_check_img):
-    # MAH - not currently matching for any band
-    # All bands have at least 359710 / 360000 pixels (99.92%) with no difference
-    matches = run_method(Mahalanobis, {"k": k}, training_data, mah_check_img)
-    assert all(match >= 359710 for match in matches)
-
-
-def test_msn(k, training_data, msn_check_img):
-    # MSN - not currently matching for any band
-    # All bands have at least 359828 / 360000 pixels (99.95%) with no difference
-    matches = run_method(MSN, {"k": k}, training_data, msn_check_img)
-    assert all(match >= 359828 for match in matches)
-
-
-def test_gnn(k, training_data, gnn_check_img):
-    # GNN - not currently matching for any band
-    # All bands have at least 352272 / 360000 pixels (97.85%) with no difference
-    matches = run_method(
-        GNN,
-        {"k": k, "spp_transform": "SQRT", "num_cca_axes": 16},
-        training_data,
-        gnn_check_img,
-    )
-    assert all(match >= 352272 for match in matches)
+@pytest.mark.parametrize(
+    "estimator_parameter",
+    ESTIMATOR_PARAMETERS.items(),
+    ids=ESTIMATOR_PARAMETERS.keys(),
+)
+@pytest.mark.parametrize("k", [5])
+def test_image_match(estimator_parameter, k, training_data, env_image):
+    """Test that predicted kNN images match expected images for the given
+    number of expected_matches"""
+    method, (est, options, expected_matches) = estimator_parameter
+    options["k"] = k
+    check_img = get_check_img(method)
+    matches = run_method(est, options, training_data, env_image, check_img)
+    assert all(match >= expected_matches for match in matches)
