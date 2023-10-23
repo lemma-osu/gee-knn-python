@@ -1,18 +1,11 @@
 import ee
 
 from . import utils
+from ._base import GeeKnnClassifier
 
 
-class Raw:
-    def __init__(self, k=1, max_duplicates=None):
-        self.k = k
-        self.max_duplicates = max_duplicates if max_duplicates is not None else 5
-
-    @property
-    def k_nearest(self):
-        return self.k + self.max_duplicates
-
-    def train(self, fc, id_field, env_columns, **kwargs):
+class Raw(GeeKnnClassifier):
+    def train(self, *, fc, id_field, env_columns, **kwargs):
         fc = ee.FeatureCollection(fc)
         self.id_field = ee.String(id_field)
         self.env_columns = ee.List(env_columns)
@@ -34,7 +27,7 @@ class Raw:
         # Ensure the env_image band names match the env_columns
         env_image = env_image.select(self.env_columns)
 
-        # Return the nearest neighbors in this space\
+        # Return the nearest neighbors in this space
         def get_name(i):
             return ee.String("NN").cat(ee.Number(i).int().format())
 
@@ -58,7 +51,6 @@ class Raw:
 
         # Zip with IDs
         zipped = neighbor_fc.toList(neighbor_fc.size()).zip(ids)
-        id_field = self.id_field
 
         def zip_with_id(t):
             t = ee.List(t)
@@ -67,7 +59,7 @@ class Raw:
             return (
                 ee.Feature(None)
                 .set("neighbors", ee.Array(f.get("neighbors")).toList())
-                .set(id_field, id_)
+                .set(self.id_field, id_)
             )
 
         neighbor_fc = ee.FeatureCollection(zipped.map(zip_with_id))

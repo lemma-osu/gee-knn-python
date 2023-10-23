@@ -1,24 +1,20 @@
 import ee
 
 from . import utils
+from ._base import GeeKnnClassifier
 from .cca import cca
 
 # TODO: Maybe make dataclass if GEE can handle that
 # TODO: Don't assign self variables in train
 
 
-class GNN:
+class GNN(GeeKnnClassifier):
     def __init__(self, k=1, spp_transform="SQRT", num_cca_axes=8, max_duplicates=None):
-        self.k = k
         self.spp_transform = spp_transform
         self.num_cca_axes = num_cca_axes
-        self.max_duplicates = max_duplicates if max_duplicates is not None else 5
+        super().__init__(k=k, max_duplicates=max_duplicates)
 
-    @property
-    def k_nearest(self):
-        return self.k + self.max_duplicates
-
-    def train(self, fc, id_field, spp_columns, env_columns):
+    def train(self, *, fc, id_field, spp_columns, env_columns):
         fc = ee.FeatureCollection(fc)
         self.id_field = ee.String(id_field)
         spp_columns = ee.List(spp_columns)

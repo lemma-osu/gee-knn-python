@@ -1,19 +1,12 @@
 import ee
 
 from . import utils
+from ._base import GeeKnnClassifier
 from .ccora import ccora
 
 
-class MSN:
-    def __init__(self, k=1, max_duplicates=None):
-        self.k = k
-        self.max_duplicates = max_duplicates if max_duplicates is not None else 5
-
-    @property
-    def k_nearest(self):
-        return self.k + self.max_duplicates
-
-    def train(self, fc, id_field, spp_columns, env_columns):
+class MSN(GeeKnnClassifier):
+    def train(self, *, fc, id_field, spp_columns, env_columns):
         fc = ee.FeatureCollection(fc)
         self.id_field = ee.String(id_field)
         spp_columns = ee.List(spp_columns)

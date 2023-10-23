@@ -1,18 +1,11 @@
 import ee
 
 from . import utils
+from ._base import GeeKnnClassifier
 
 
-class Mahalanobis:
-    def __init__(self, k=1, max_duplicates=None):
-        self.k = k
-        self.max_duplicates = max_duplicates if max_duplicates is not None else 5
-
-    @property
-    def k_nearest(self):
-        return self.k + self.max_duplicates
-
-    def train(self, fc, id_field, env_columns, **kwargs):
+class Mahalanobis(GeeKnnClassifier):
+    def train(self, *, fc, id_field, env_columns, **kwargs):
         fc = ee.FeatureCollection(fc)
         self.id_field = ee.String(id_field)
         self.env_columns = ee.List(env_columns)
