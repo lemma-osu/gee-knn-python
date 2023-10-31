@@ -21,16 +21,23 @@ class GNN(GeeKnnClassifier):
         self.num_cca_axes = num_cca_axes
         super().__init__(k=k, max_duplicates=max_duplicates)
 
-    def train(self, *, fc, id_field, spp_columns, env_columns):
+    def train(
+        self,
+        *,
+        fc: ee.FeatureCollection,
+        id_field: str,
+        spp_columns: list[str],
+        env_columns: list[str],
+        **kwargs,
+    ):
         fc = ee.FeatureCollection(fc)
         self.id_field = ee.String(id_field)
-        spp_columns = ee.List(spp_columns)
         self.env_columns = ee.List(env_columns)
 
         # Create the initial arrays from the feature collection
-        ids = utils.fc_to_array(fc, ee.List([self.id_field])).project([0]).toList()
+        ids = utils.fc_to_array(fc, [id_field]).project([0]).toList()
         spp_arr = utils.fc_to_array(fc, spp_columns)
-        env_arr = utils.fc_to_array(fc, self.env_columns)
+        env_arr = utils.fc_to_array(fc, env_columns)
 
         # Remove spp columns that are zero
         col_sums = spp_arr.reduce(ee.Reducer.sum(), [0])

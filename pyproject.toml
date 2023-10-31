@@ -8,13 +8,13 @@ dynamic = ["version"]
 description = "Python based nearest neighbor mapping in GEE"
 readme = "README.md"
 license = ""
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [{ name = "Matt Gregory", email = "matt.gregory@oregonstate.edu" }]
 dependencies = [
     "earthengine-api",
     "joblib",
     "pydantic",
-    "scikit-learn-knn-regression @ git+ssh://git@github.com/lemma-osu/scikit-learn-knn-regression",
+    "scikit-learn-knn-regression @ git+https://github.com/lemma-osu/scikit-learn-knn-regression",
 ]
 
 [project.urls]
