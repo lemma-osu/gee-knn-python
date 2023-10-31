@@ -4,26 +4,24 @@ ee.Initialize()
 
 DATA_DIR = "users/gregorma/gee-knn/attribute_tables"
 
-ENV_COLUMNS = ee.List(
-    [
-        "ANNPRE",
-        "ANNTMP",
-        "AUGMAXT",
-        "CONTPRE",
-        "CVPRE",
-        "DECMINT",
-        "DIFTMP",
-        "SMRTMP",
-        "SMRTP",
-        "LAT",
-        "LON",
-        "ASPTR",
-        "DEM",
-        "PRR",
-        "SLPPCT",
-        "TPI450",
-    ]
-)
+ENV_COLUMNS = [
+    "ANNPRE",
+    "ANNTMP",
+    "AUGMAXT",
+    "CONTPRE",
+    "CVPRE",
+    "DECMINT",
+    "DIFTMP",
+    "SMRTMP",
+    "SMRTP",
+    "LAT",
+    "LON",
+    "ASPTR",
+    "DEM",
+    "PRR",
+    "SLPPCT",
+    "TPI450",
+]
 
 
 def get_training_data():
@@ -49,7 +47,7 @@ def get_training_data():
     # Set the columns to extract.  For env_columns, they need to match the
     # ordering of the bands in the stacked environmental image
     unwanted = ee.List([id_field, "system:index"])
-    spp_columns = spp.first().propertyNames().removeAll(unwanted).sort()
+    spp_columns = spp.first().propertyNames().removeAll(unwanted).sort().getInfo()
     return {
         "fc": fc,
         "id_field": id_field,
