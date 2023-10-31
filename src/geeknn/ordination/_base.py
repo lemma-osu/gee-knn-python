@@ -67,6 +67,9 @@ class GeeKnnClassifier:
         self.k = k
         self.max_duplicates = max_duplicates if max_duplicates is not None else 5
 
+    def get_ids(self, fc: FeatureCollection, id_field: str) -> list[Any]:
+        return list(map(int, fc.aggregate_array(id_field)))
+
     @property
     def k_nearest(self):
         return self.k + self.max_duplicates

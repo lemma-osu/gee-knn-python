@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 import ee
@@ -38,10 +40,9 @@ class Colocation(BaseModel):
 
 
 # Extract arrays from feature classes for the specified columns
-def fc_to_array(fc, columns):
-    columns = ee.List(columns)
-    reducer = ee.Reducer.toList().repeat(columns.size())
-    fc_array = fc.reduceColumns(reducer, columns)
+def fc_to_array(fc: ee.FeatureCollection, columns: list[str]):
+    reducer = ee.Reducer.toList().repeat(len(columns))
+    fc_array = fc.reduceColumns(reducer, ee.List(columns))
     return ee.Array(fc_array.get("list")).transpose()
 
 
@@ -68,7 +69,7 @@ def column_means(arr):
 
 
 def column_sds(arr):
-    return arr.reduce(ee.Reducer.stdDev(), [0])
+    return arr.reduce(ee.Reducer.sampleStdDev(), [0])
 
 
 def normalize_arr(arr):

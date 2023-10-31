@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import ee
+from sknnr.transformers import CCorATransformer
 
 from . import utils
-from ._base import GeeKnnClassifier
+from ._base import FeatureCollection, GeeKnnClassifier
 from .ccora import ccora
 
 
@@ -33,6 +36,40 @@ class MSN(GeeKnnClassifier):
         self.fc = utils.scores_to_fc(ids, plot_scores.toList(), self.id_field)
 
         # Train the classifier within the transformed space
+        self.clf = ee.Classifier.minimumDistance(
+            metric="euclidean",
+            kNearest=self.k_nearest,
+        ).train(
+            features=self.fc.get("fc"),
+            classProperty=self.id_field,
+            inputProperties=self.fc.get("axis_names"),
+        )
+        return self
+
+    def train_client(
+        self,
+        *,
+        fc: ee.FeatureCollection,
+        id_field: str,
+        spp_columns: list[str],
+        env_columns: list[str],
+        **kwargs,
+    ):
+        client_fc = FeatureCollection.from_ee_feature_collection(fc)
+        X = client_fc.properties_to_array(env_columns)
+        y = client_fc.properties_to_array(spp_columns)
+        transformer = CCorATransformer().fit(X, y=y)
+
+        self.id_field = ee.String(id_field)
+        self.env_columns = ee.List(env_columns)
+        self.env_means = ee.Array([transformer.scaler_.mean_.tolist()])
+        self.env_sds = ee.Array([transformer.scaler_.scale_.tolist()])
+        self.projector = ee.Array(transformer.projector_.tolist())
+        self.fc = utils.scores_to_fc(
+            self.get_ids(client_fc, id_field),
+            ee.Array(transformer.transform(X).tolist()).toList(),
+            id_field,
+        )
         self.clf = ee.Classifier.minimumDistance(
             metric="euclidean",
             kNearest=self.k_nearest,

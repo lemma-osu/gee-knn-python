@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ee
 
 from . import utils
@@ -19,6 +21,16 @@ class Raw(GeeKnnClassifier):
             inputProperties=self.env_columns,
         )
         return self
+
+    def train_client(
+        self,
+        *,
+        fc: ee.FeatureCollection,
+        id_field: str,
+        env_columns: list[str],
+        **kwargs,
+    ):
+        return self.train(fc=fc, id_field=id_field, env_columns=env_columns)
 
     def predict(self, env_image, mode="CLASSIFICATION"):
         env_image = ee.Image(env_image)

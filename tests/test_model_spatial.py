@@ -47,6 +47,25 @@ def run_method(kls, options, training_data, env_image, check_img):
     )
 
 
+def run_client_method(kls, options, training_data, env_image, check_img):
+    """Run predict on the given estimator, difference it against a
+    reference images, and return the frequency of zero differences"""
+    model = kls(**options).train_client(**training_data)
+    nn = model.predict(env_image=env_image, mode="CLASSIFICATION").retile(32)
+    diff_nn = nn.subtract(check_img).abs()
+    frequency = diff_nn.reduceRegion(
+        reducer=ee.Reducer.frequencyHistogram(),
+        scale=30,
+        maxPixels=1e9,
+        tileScale=8,
+    )
+    return (
+        ee.List(diff_nn.bandNames())
+        .map(lambda b: (ee.Number(ee.Dictionary(frequency.get(b)).get("0.0"))))
+        .getInfo()
+    )
+
+
 @pytest.mark.parametrize(
     "estimator_parameter",
     ESTIMATOR_PARAMETERS.items(),
@@ -60,4 +79,20 @@ def test_image_match(estimator_parameter, k, training_data, env_image):
     options["k"] = k
     check_img = get_check_img(method)
     matches = run_method(est, options, training_data, env_image, check_img)
+    assert all(match >= expected_matches for match in matches)
+
+
+@pytest.mark.parametrize(
+    "estimator_parameter",
+    ESTIMATOR_PARAMETERS.items(),
+    ids=ESTIMATOR_PARAMETERS.keys(),
+)
+@pytest.mark.parametrize("k", [5])
+def test_client_image_match(estimator_parameter, k, training_data, env_image):
+    """Test that predicted kNN images match expected images for the given
+    number of expected_matches"""
+    method, (est, options, expected_matches) = estimator_parameter
+    options["k"] = k
+    check_img = get_check_img(method)
+    matches = run_client_method(est, options, training_data, env_image, check_img)
     assert all(match >= expected_matches for match in matches)

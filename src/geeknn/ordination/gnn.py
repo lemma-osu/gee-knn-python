@@ -1,14 +1,21 @@
+from __future__ import annotations
+
 import ee
+import numpy as np
+from sknnr.transformers import CCATransformer
 
 from . import utils
-from ._base import GeeKnnClassifier
+from ._base import FeatureCollection, GeeKnnClassifier
 from .cca import cca
-
-# TODO: Maybe make dataclass if GEE can handle that
-# TODO: Don't assign self variables in train
 
 
 class GNN(GeeKnnClassifier):
+    SPP_TRANSFORM_FUNC = {
+        "SQRT": lambda x: np.sqrt(x),
+        "LOG": lambda x: np.log(x),
+        "NONE": lambda x: x,
+    }
+
     def __init__(self, k=1, spp_transform="SQRT", num_cca_axes=8, max_duplicates=None):
         self.spp_transform = spp_transform
         self.num_cca_axes = num_cca_axes
@@ -115,6 +122,40 @@ class GNN(GeeKnnClassifier):
         )
         return self
 
+    def train_client(
+        self,
+        *,
+        fc: ee.FeatureCollection,
+        id_field: str,
+        spp_columns: list[str],
+        env_columns: list[str],
+        **kwargs,
+    ):
+        client_fc = FeatureCollection.from_ee_feature_collection(fc)
+        X = client_fc.properties_to_array(env_columns)
+        y = client_fc.properties_to_array(spp_columns)
+        y = self.SPP_TRANSFORM_FUNC[self.spp_transform](y)
+        transformer = CCATransformer(n_components=self.num_cca_axes).fit(X, y=y)
+
+        self.id_field = ee.String(id_field)
+        self.env_columns = ee.List(env_columns)
+        self.env_centers = ee.Array([transformer.env_center_.tolist()])
+        self.projector = ee.Array(transformer.projector_.tolist())
+        self.fc = utils.scores_to_fc(
+            self.get_ids(client_fc, id_field),
+            ee.Array(transformer.transform(X).tolist()).toList(),
+            id_field,
+        )
+        self.clf = ee.Classifier.minimumDistance(
+            metric="euclidean",
+            kNearest=self.k_nearest,
+        ).train(
+            features=self.fc.get("fc"),
+            classProperty=self.id_field,
+            inputProperties=self.fc.get("axis_names"),
+        )
+        return self
+
     def predict(self, env_image, mode="CLASSIFICATION"):
         env_image = ee.Image(env_image)
         self.clf = self.clf.setOutputMode(ee.String(mode))
@@ -124,17 +165,24 @@ class GNN(GeeKnnClassifier):
 
         # Convert this to an array image and normalize the variables
         arr_im = env_image.toArray().toArray(1).arrayTranspose(0, 1)
-        normalized = arr_im.subtract(ee.Image(self.env_means)).divide(
-            ee.Image(self.env_sds)
-        )
+        # normalized = arr_im.subtract(ee.Image(self.env_means)).divide(
+        #     ee.Image(self.env_sds)
+        # )
 
-        # Center the variables based on species weights, multiply by
-        # the CCA coefficients and weight based on the eigenvalues matrix
+        # # Center the variables based on species weights, multiply by
+        # # the CCA coefficients and weight based on the eigenvalues matrix
+        # transformed_image = (
+        #     normalized.subtract(ee.Image(ee.Array(self.cca_obj.get("centers"))))
+        #     .matrixMultiply(ee.Array(self.cca_obj.get("coeff")))
+        #     .arraySlice(1, 0, self.num_cca_axes)
+        #     .matrixMultiply(ee.Array(self.cca_obj.get("eig_matrix")))
+        #     .arrayProject([1])
+        #     .arrayFlatten([self.fc.get("axis_names")])
+        # )
+
         transformed_image = (
-            normalized.subtract(ee.Image(ee.Array(self.cca_obj.get("centers"))))
-            .matrixMultiply(ee.Array(self.cca_obj.get("coeff")))
-            .arraySlice(1, 0, self.num_cca_axes)
-            .matrixMultiply(ee.Array(self.cca_obj.get("eig_matrix")))
+            arr_im.subtract(ee.Image(self.env_centers))
+            .matrixMultiply(self.projector)
             .arrayProject([1])
             .arrayFlatten([self.fc.get("axis_names")])
         )
@@ -163,14 +211,20 @@ class GNN(GeeKnnClassifier):
         lookup = fc.reduceColumns(reducer, self.env_columns)
         env_arr = ee.Array(lookup.get("list")).transpose()
 
-        # Normalize the variables and project the plots
+        # # Normalize the variables and project the plots
+        # transformed_arr = (
+        #     env_arr.subtract(self.env_means.repeat(0, fc.size()))
+        #     .divide(self.env_sds.repeat(0, fc.size()))
+        #     .subtract(ee.Array(self.cca_obj.get("centers")).repeat(0, fc.size()))
+        #     .matrixMultiply(ee.Array(self.cca_obj.get("coeff")))
+        #     .slice(1, 0, self.num_cca_axes)
+        #     .matrixMultiply(ee.Array(self.cca_obj.get("eig_matrix")))
+        #     .toList()
+        # )
+
         transformed_arr = (
-            env_arr.subtract(self.env_means.repeat(0, fc.size()))
-            .divide(self.env_sds.repeat(0, fc.size()))
-            .subtract(ee.Array(self.cca_obj.get("centers")).repeat(0, fc.size()))
-            .matrixMultiply(ee.Array(self.cca_obj.get("coeff")))
-            .slice(1, 0, self.num_cca_axes)
-            .matrixMultiply(ee.Array(self.cca_obj.get("eig_matrix")))
+            env_arr.subtract(self.env_centers.repeat(0, fc.size()))
+            .matrixMultiply(self.projector)
             .toList()
         )
 
