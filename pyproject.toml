@@ -10,7 +10,7 @@ readme = "README.md"
 license = ""
 requires-python = ">=3.8"
 authors = [{ name = "Matt Gregory", email = "matt.gregory@oregonstate.edu" }]
-dependencies = ["earthengine-api", "pydantic"]
+dependencies = ["earthengine-api", "joblib", "pydantic"]
 
 [project.urls]
 Homepage = "https://github.com/lemma-osu/gee-knn-python"
