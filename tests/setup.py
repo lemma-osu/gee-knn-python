@@ -4,7 +4,7 @@ ee.Initialize()
 
 DATA_DIR = "users/gregorma/gee-knn/attribute_tables"
 
-ENV_COLUMNS = [
+X_COLUMNS = [
     "ANNPRE",
     "ANNTMP",
     "AUGMAXT",
@@ -27,15 +27,16 @@ ENV_COLUMNS = [
 def get_training_data():
     """Return the training data for the test model that consists of a feature
     collection with the ID field, species columns, and environmental columns
-    identified."""
+    identified.
+    """
     id_field = "FCID"
-    spp = ee.FeatureCollection(f"{DATA_DIR}/test_species").sort(id_field)
-    env = ee.FeatureCollection(f"{DATA_DIR}/test_environment").sort(id_field)
+    y = ee.FeatureCollection(f"{DATA_DIR}/test_species").sort(id_field)
+    X = ee.FeatureCollection(f"{DATA_DIR}/test_environment").sort(id_field)
 
     # Join the properties of the two feature collections
     # See https://code.earthengine.google.com/87211cf5cc335585a992acefcd7ec9a4
     fltr = ee.Filter.equals(leftField=id_field, rightField=id_field)
-    join = ee.Join.saveFirst(matchKey=id_field).apply(spp, env, fltr)
+    join = ee.Join.saveFirst(matchKey=id_field).apply(y, X, fltr)
 
     def join_feature(f):
         f1 = ee.Feature(f)
@@ -47,12 +48,12 @@ def get_training_data():
     # Set the columns to extract.  For env_columns, they need to match the
     # ordering of the bands in the stacked environmental image
     unwanted = ee.List([id_field, "system:index"])
-    spp_columns = spp.first().propertyNames().removeAll(unwanted).sort().getInfo()
+    y_columns = y.first().propertyNames().removeAll(unwanted).sort().getInfo()
     return {
         "fc": fc,
         "id_field": id_field,
-        "spp_columns": spp_columns,
-        "env_columns": ENV_COLUMNS,
+        "y_columns": y_columns,
+        "X_columns": X_COLUMNS,
     }
 
 
@@ -63,4 +64,4 @@ def get_colocation_fc():
 
 def get_covariate_image():
     """Return the stacked environmental image for the test data"""
-    return ee.Image("users/gregorma/gee-knn/test-input/all_600").rename(ENV_COLUMNS)
+    return ee.Image("users/gregorma/gee-knn/test-input/all_600").rename(X_COLUMNS)
