@@ -3,8 +3,6 @@ import pytest
 
 from geeknn.ordination import GNN, MSN, Euclidean, Mahalanobis, Raw
 
-from .setup import get_covariate_image, get_training_data
-
 ESTIMATOR_PARAMETERS = {
     "raw": (Raw, {}, 360000),
     "euc": (Euclidean, {}, 359998),
@@ -12,16 +10,6 @@ ESTIMATOR_PARAMETERS = {
     "msn": (MSN, {}, 359828),
     "gnn": (GNN, {"spp_transform": "SQRT", "num_cca_axes": 16}, 352272),
 }
-
-
-@pytest.fixture()
-def training_data():
-    return get_training_data()
-
-
-@pytest.fixture()
-def X_image():
-    return get_covariate_image()
 
 
 def get_check_image(prefix: str) -> ee.Image:

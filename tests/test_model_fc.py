@@ -1,9 +1,6 @@
 import pytest
 
 from geeknn.ordination import GNN, MSN, Euclidean, Mahalanobis, Raw
-from geeknn.ordination.utils import Colocation
-
-from .setup import get_colocation_fc, get_training_data
 
 ESTIMATOR_PARAMETERS = {
     "raw": (Raw, {}),
@@ -12,22 +9,6 @@ ESTIMATOR_PARAMETERS = {
     "msn": (MSN, {}),
     "gnn": (GNN, {"spp_transform": "SQRT", "num_cca_axes": 16}),
 }
-
-
-@pytest.fixture()
-def training_data():
-    return get_training_data()
-
-
-@pytest.fixture()
-def colocation_obj():
-    colocation_fc = get_colocation_fc()
-    return Colocation(fc=colocation_fc, location_field="LOC_ID", plot_field="FCID")
-
-
-@pytest.fixture()
-def observed_ids(training_data):
-    return training_data["fc"].limit(10).aggregate_array("FCID").getInfo()
 
 
 def run_method(kls, options, training_data, colocation_obj=None):

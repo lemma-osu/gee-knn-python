@@ -1,4 +1,7 @@
 import ee
+import pytest
+
+from geeknn.ordination.utils import Colocation
 
 ee.Initialize()
 
@@ -24,7 +27,8 @@ X_COLUMNS = [
 ]
 
 
-def get_training_data():
+@pytest.fixture()
+def training_data():
     """Return the training data for the test model that consists of a feature
     collection with the ID field, species columns, and environmental columns
     identified.
@@ -45,8 +49,8 @@ def get_training_data():
 
     fc = join.map(join_feature)
 
-    # Set the columns to extract.  For env_columns, they need to match the
-    # ordering of the bands in the stacked environmental image
+    # Set the columns to extract.  For X_columns, they need to match the
+    # ordering of the bands in the stacked X image
     unwanted = ee.List([id_field, "system:index"])
     y_columns = y.first().propertyNames().removeAll(unwanted).sort().getInfo()
     return {
@@ -57,11 +61,19 @@ def get_training_data():
     }
 
 
-def get_colocation_fc():
+@pytest.fixture()
+def observed_ids(training_data):
+    return training_data["fc"].limit(10).aggregate_array("FCID").getInfo()
+
+
+@pytest.fixture()
+def colocation_obj():
     """Return the crosswalk between FCID and LOC_ID for the test data"""
-    return ee.FeatureCollection(f"{DATA_DIR}/fcid_x_locid_eco")
+    colocation_fc = ee.FeatureCollection(f"{DATA_DIR}/fcid_x_locid_eco")
+    return Colocation(fc=colocation_fc, location_field="LOC_ID", plot_field="FCID")
 
 
-def get_covariate_image():
+@pytest.fixture()
+def X_image():
     """Return the stacked environmental image for the test data"""
     return ee.Image("users/gregorma/gee-knn/test-input/all_600").rename(X_COLUMNS)
