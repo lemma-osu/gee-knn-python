@@ -26,7 +26,6 @@ def run_method(kls, options, training_data, X_image, check_image):
         reducer=ee.Reducer.frequencyHistogram(),
         scale=30,
         maxPixels=1e9,
-        tileScale=8,
     )
     return (
         ee.List(diff_nn_image.bandNames())
