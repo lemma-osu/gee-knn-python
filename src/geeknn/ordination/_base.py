@@ -92,10 +92,6 @@ class Raw:
         """
         return self.k + self.max_duplicates
 
-    def get_ids(self, fc: FeatureCollection, id_field: str) -> list[Any]:
-        """Return the IDs from the feature collection."""
-        return list(map(int, fc.aggregate_array(id_field)))
-
     def _set_classifier(
         self,
         *,
@@ -235,7 +231,9 @@ class Transformed(Raw, ABC):
         self.X_stds = ee.Array([self._get_X_stds()])
         self.projector = ee.Array(self._get_projector())
         self.fc = scores_to_fc(
-            self.get_ids(client_fc, id_field), X_transformed.tolist(), id_field
+            client_fc.aggregate_array(id_field).tolist(),
+            X_transformed.tolist(),
+            id_field,
         )
 
         super()._set_classifier(
