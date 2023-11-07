@@ -41,9 +41,9 @@ class FeatureCollection(BaseModel):
 
     type: str
     columns: dict[str, Any]
-    version: int | None
-    id: str | None
-    properties: dict[str, Any] | None
+    version: Optional[int]  # noqa: UP007
+    id: Optional[str]  # noqa: UP007
+    properties: Optional[dict[str, Any]]  # noqa: UP007
     features: list[Feature]
 
     def aggregate_array(self, property: str) -> NDArray:
