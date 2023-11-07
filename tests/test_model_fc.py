@@ -7,7 +7,7 @@ ESTIMATOR_PARAMETERS = {
     "euc": (Euclidean, {}),
     "mah": (Mahalanobis, {}),
     "msn": (MSN, {}),
-    "gnn": (GNN, {"spp_transform": "SQRT", "num_cca_axes": 16}),
+    "gnn": (GNN, {"y_transform": "SQRT", "n_components": 16}),
 }
 
 

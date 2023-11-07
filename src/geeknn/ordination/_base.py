@@ -73,9 +73,9 @@ class FeatureCollection(BaseModel):
 
 
 class Raw:
-    def __init__(self, k=1, max_duplicates=None):
+    def __init__(self, k: int = 1, max_duplicates: int = 5):
         self.k = k
-        self.max_duplicates = max_duplicates if max_duplicates is not None else 5
+        self.max_duplicates = max_duplicates
 
     def transform_image(self, X_image: ee.Image) -> ee.Image:
         """No-op placeholder."""
