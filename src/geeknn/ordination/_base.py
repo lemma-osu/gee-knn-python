@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from itertools import chain
-from typing import Any
+from typing import Any, Optional
 
 import ee
 import numpy as np
@@ -25,7 +25,7 @@ class Feature(BaseModel):
     """Client-side proxy for ee.Feature object."""
 
     type: str
-    geometry: Geometry | None
+    geometry: Optional[Geometry]  # noqa: UP007
     id: str
     properties: dict[str, Any]
 
