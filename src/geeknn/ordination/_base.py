@@ -124,7 +124,7 @@ class Raw:
 
     def predict(self, X_image: ee.Image, mode: str = "CLASSIFICATION"):
         """Predict the nearest neighbors for the given covariate (X) image."""
-        self.clf = self.clf.setOutputMode(ee.String(mode))
+        clf = self.clf.setOutputMode(ee.String(mode))
 
         # Ensure the X_image band names match the X_columns
         X_image = X_image.select(self.X_columns)
@@ -138,7 +138,7 @@ class Raw:
         band_names = ee.List.sequence(1, self.k).map(get_neighbor_band_name)
 
         return (
-            X_image.classify(classifier=self.clf)
+            X_image.classify(classifier=clf)
             .toArray()
             .arraySlice(0, 0, self.k)
             .arrayFlatten([band_names])
