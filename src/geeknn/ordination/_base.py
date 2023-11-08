@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 from pydantic import BaseModel
 from sklearn.base import TransformerMixin
 
-from .utils import crosswalk_to_ids, filter_neighbors, return_k_neighbors, scores_to_fc
+from .utils import crosswalk_to_ids, filter_neighbors, get_k_neighbors, scores_to_fc
 
 
 class Geometry(BaseModel):
@@ -184,7 +184,7 @@ class Raw:
         neighbor_fc = crosswalk_to_ids(neighbor_fc, ids, self.id_field)
         if colocation_obj is not None:
             neighbor_fc = filter_neighbors(neighbor_fc, colocation_obj, self.id_field)
-        return return_k_neighbors(neighbor_fc, self.k)
+        return get_k_neighbors(neighbor_fc, self.k)
 
 
 class Transformed(Raw, ABC):

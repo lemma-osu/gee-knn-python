@@ -112,14 +112,14 @@ def filter_neighbors(
     return applied.map(get_colocated)
 
 
-def return_k_neighbors(neighbor_fc: ee.FeatureCollection, k: int):
+def get_k_neighbors(neighbor_fc: ee.FeatureCollection, k: int):
     """Return the k nearest neighbors for each feature in the feature collection
     as an array.
     """
 
-    def return_k_neighbor_for_feature(lst):
+    def get_k_neighbor_for_feature(lst):
         return ee.List(lst).slice(0, ee.Number(k))
 
     return ee.Array(
-        neighbor_fc.aggregate_array("neighbors").map(return_k_neighbor_for_feature)
+        neighbor_fc.aggregate_array("neighbors").map(get_k_neighbor_for_feature)
     )
