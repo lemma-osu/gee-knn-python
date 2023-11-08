@@ -223,7 +223,12 @@ class Transformed(Raw, ABC):
     def train(
         self, *, fc: ee.FeatureCollection, id_field: str, X_columns: list[str], **kwargs
     ):
-        """Train the estimator, which consists of many steps:
+        """Train the estimator and store the needed server-side objects used
+        in prediction.
+
+        Notes
+        -----
+        Training the estimator requires the following steps:
 
         1. Convert the server-side ee.FeatureCollection to a client-side
            FeatureCollection

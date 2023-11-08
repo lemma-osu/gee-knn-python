@@ -19,7 +19,6 @@ class GNN(Transformed):
         super().__init__(**kwargs)
 
     def _get_transformer(self):
-        # return CCATransformer(self.n_components)
         return CCATransformer(n_components=self.n_components)
 
     def _get_modeling_X_y(self, *, client_fc, X_columns, y_columns):

@@ -7,7 +7,6 @@ from ._base import Transformed
 
 class MSN(Transformed):
     def _get_transformer(self):
-        # return CCorATransformer(self.n_components)
         return CCorATransformer()
 
     def _get_modeling_X_y(self, *, client_fc, X_columns, y_columns):
