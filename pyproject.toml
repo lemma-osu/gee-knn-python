@@ -14,6 +14,7 @@ dependencies = [
     "earthengine-api",
     "joblib",
     "pydantic",
+    "scikit-learn",
     "scikit-learn-knn-regression @ git+https://github.com/lemma-osu/scikit-learn-knn-regression",
 ]
 
