@@ -20,7 +20,7 @@ def run_method(kls, options, training_data, X_image, check_image):
     """Run predict on the given estimator, difference it against a
     reference images, and return the frequency of zero differences"""
     model = kls(**options).train(**training_data)
-    nn_image = model.predict(X_image=X_image, mode="CLASSIFICATION").retile(32)
+    nn_image = model.predict(X_image, mode="CLASSIFICATION").retile(32)
     diff_nn_image = nn_image.subtract(check_image).abs()
     frequency = diff_nn_image.reduceRegion(
         reducer=ee.Reducer.frequencyHistogram(),

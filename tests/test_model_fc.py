@@ -14,10 +14,7 @@ ESTIMATOR_PARAMETERS = {
 def run_method(kls, options, training_data, colocation_obj=None):
     """Run prediction in feature collection mode for the first 10 features"""
     model = kls(**options).train(**training_data)
-    return model.predict_fc(
-        fc=training_data["fc"].limit(10),
-        colocation_obj=colocation_obj,
-    )
+    return model.predict(training_data["fc"].limit(10), colocation_obj=colocation_obj)
 
 
 @pytest.mark.parametrize(

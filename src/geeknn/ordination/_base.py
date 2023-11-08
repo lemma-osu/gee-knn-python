@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from functools import singledispatchmethod
 from itertools import chain
 from typing import Any, Optional
 
@@ -77,14 +78,6 @@ class Raw:
         self.k = k
         self.max_duplicates = max_duplicates
 
-    def transform_image(self, X_image: ee.Image) -> ee.Image:
-        """No-op placeholder."""
-        return X_image
-
-    def transform_fc(self, fc: ee.FeatureCollection) -> ee.FeatureCollection:
-        """No-op placeholder."""
-        return fc
-
     @property
     def k_nearest(self):
         """Return the number of requested nearest neighbors plus max_duplicates
@@ -109,6 +102,10 @@ class Raw:
             inputProperties=input_properties,
         )
 
+    def _get_ordered_X_image(self, X_image: ee.Image) -> ee.Image:
+        """Return the X_image ensuring that band names match X_columns."""
+        return X_image.select(self.X_columns)
+
     def train(
         self, *, fc: ee.FeatureCollection, id_field: str, X_columns: list[str], **_
     ):
@@ -122,15 +119,52 @@ class Raw:
         )
         return self
 
-    def predict(self, X_image: ee.Image, mode: str = "CLASSIFICATION"):
-        """Predict the nearest neighbors for the given covariate (X) image."""
+    @singledispatchmethod
+    def predict(self, arg, **kwargs):
+        """
+        Predict nearest neighbors based on the type of the first argument.
+
+        Parameters:
+        - arg: The first argument to predict, which can be either an ee.Image or
+          ee.FeatureCollection
+        - **kwargs: Additional keyword arguments to pass to the predict method
+
+        Dispatched Types:
+        - ee.Image: Predict the nearest neighbors for the given covariate image.
+          - Additional keyword arguments:
+            - mode: The mode to use for the classifier.  Either "CLASSIFICATION"
+              or "REGRESSION".
+
+        - ee.FeatureCollection: Predict the nearest neighbors for the given covariate
+          feature collection.
+          - Additional keyword arguments:
+            - colocation_obj: A Colocation object used to filter out neighbors that
+              are not independent.
+
+        Returns:
+        - ee.Image: An image with k bands, where each band is the ID of the kth nearest
+          neighbor.
+
+        or
+
+        - ee.FeatureCollection: A feature collection with k properties, where each
+          property is the ID of the kth nearest neighbor.
+        """
+        raise NotImplementedError
+
+    @predict.register
+    def _(self, X_image: ee.Image, mode: str = "CLASSIFICATION"):
+        X_image = self._get_ordered_X_image(X_image)
+        return self._predict_image(X_image, mode=mode)
+
+    @predict.register
+    def _(self, fc: ee.FeatureCollection, colocation_obj=None):
+        ids = fc.aggregate_array(self.id_field)
+        return self._predict_fc(fc, ids, colocation_obj=colocation_obj)
+
+    def _predict_image(self, X_image: ee.Image, mode: str = "CLASSIFICATION"):
+        """Predict the nearest neighbors for the given covariate image."""
         clf = self.clf.setOutputMode(ee.String(mode))
-
-        # Ensure the X_image band names match the X_columns
-        X_image = X_image.select(self.X_columns)
-
-        # Transform image
-        X_image = self.transform_image(X_image)
 
         def get_neighbor_band_name(i):
             return ee.String("NN").cat(ee.Number(i).int().format())
@@ -144,27 +178,12 @@ class Raw:
             .arrayFlatten([band_names])
         )
 
-    def predict_fc(self, fc: ee.FeatureCollection, colocation_obj=None):
+    def _predict_fc(self, fc: ee.FeatureCollection, ids: NDArray, colocation_obj=None):
         """Predict the nearest neighbors for the given covariate feature collection."""
-        fc = ee.FeatureCollection(fc)
-
-        # Transform feature collection
-        transformed_fc = self.transform_fc(fc)
-
-        # Retrieve the nearest neighbors in this space
-        neighbor_fc = transformed_fc.classify(
-            classifier=self.clf, outputName="neighbors"
-        )
-
-        # Add the IDs in from the original feature collection
-        ids = fc.aggregate_array(self.id_field)
+        neighbor_fc = fc.classify(classifier=self.clf, outputName="neighbors")
         neighbor_fc = crosswalk_to_ids(neighbor_fc, ids, self.id_field)
-
-        # Filter plots if colocation_obj is present
         if colocation_obj is not None:
             neighbor_fc = filter_neighbors(neighbor_fc, colocation_obj, self.id_field)
-
-        # Return the neighbors as a list of lists (plots x k)
         return return_k_neighbors(neighbor_fc, self.k)
 
 
@@ -244,7 +263,50 @@ class Transformed(Raw, ABC):
 
         return self
 
-    def transform_image(self, X_image: ee.Image) -> ee.Image:
+    @singledispatchmethod
+    def predict(self, args, **kwargs):
+        raise NotImplementedError
+
+    @predict.register
+    def _(self, X_image: ee.Image, mode: str = "CLASSIFICATION"):
+        X_image = self._get_ordered_X_image(X_image)
+        transformed_image = self.transform(X_image)
+        return super()._predict_image(transformed_image, mode=mode)
+
+    @predict.register
+    def _(self, fc: ee.FeatureCollection, colocation_obj=None):
+        ids = fc.aggregate_array(self.id_field)
+        transformed_fc = self.transform(fc)
+        return self._predict_fc(transformed_fc, ids, colocation_obj=colocation_obj)
+
+    @singledispatchmethod
+    def transform(self, arg):
+        """
+        Transform covariate values into the ordination space based on the type
+
+        Parameters:
+        - arg: The argument to transform, which can be either an ee.Image or
+          ee.FeatureCollection
+
+        Dispatched Types:
+        - ee.Image: Transform the raw covariate image into the ordination space
+
+        - ee.FeatureCollection: Transform each feature in the collection into the
+          ordination space.
+
+        Returns:
+        - ee.Image: The transformed covariate image.
+
+        or
+
+        - ee.FeatureCollection: A feature collection with transformed covariate
+          properties.
+        """
+
+        raise NotImplementedError
+
+    @transform.register
+    def _(self, X_image: ee.Image) -> ee.Image:
         """Transform a covariate image into the ordination space."""
         X_array_image = X_image.toArray().toArray(1).arrayTranspose(0, 1)
         return (
@@ -255,7 +317,8 @@ class Transformed(Raw, ABC):
             .arrayFlatten([self.fc.get("axis_names")])
         )
 
-    def transform_fc(self, fc: ee.FeatureCollection) -> ee.FeatureCollection:
+    @transform.register
+    def _(self, fc: ee.FeatureCollection) -> ee.FeatureCollection:
         """Transform a covariate feature collection into the ordination space."""
         # Select out the X_columns and convert to array
         reducer = ee.Reducer.toList().repeat(self.X_columns.size())
