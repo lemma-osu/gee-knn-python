@@ -77,6 +77,9 @@ class Raw:
     def __init__(self, k: int = 1, max_duplicates: int = 5):
         self.k = k
         self.max_duplicates = max_duplicates
+        self.clf = ee.Classifier.minimumDistance(
+            metric="euclidean", kNearest=self.k_nearest
+        )
 
     @property
     def k_nearest(self):
@@ -85,18 +88,15 @@ class Raw:
         """
         return self.k + self.max_duplicates
 
-    def _set_classifier(
+    def _train_classifier(
         self,
         *,
         fc: ee.FeatureCollection,
         class_property: ee.String,
         input_properties: ee.List,
     ) -> None:
-        """Set the EE minimumDistance classifier for this estimator."""
-        self.clf = ee.Classifier.minimumDistance(
-            metric="euclidean",
-            kNearest=self.k_nearest,
-        ).train(
+        """Train the classifier with the given feature collection."""
+        self.clf = self.clf.train(
             features=fc,
             classProperty=class_property,
             inputProperties=input_properties,
@@ -114,7 +114,7 @@ class Raw:
         """
         self.id_field = ee.String(id_field)
         self.X_columns = ee.List(X_columns)
-        self._set_classifier(
+        self._train_classifier(
             fc=fc, class_property=self.id_field, input_properties=self.X_columns
         )
         return self
@@ -260,7 +260,7 @@ class Transformed(Raw, ABC):
             id_field,
         )
 
-        super()._set_classifier(
+        super()._train_classifier(
             fc=self.fc.get("fc"),
             class_property=id_field,
             input_properties=self.fc.get("axis_names"),
