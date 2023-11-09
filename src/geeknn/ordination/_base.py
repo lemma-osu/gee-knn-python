@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from functools import singledispatchmethod
+from functools import lru_cache, singledispatchmethod
 from itertools import chain
 from typing import Any, Optional
 
@@ -56,6 +56,7 @@ class FeatureCollection(BaseModel):
         return np.array([f.get_properties(properties) for f in self.features])
 
     @classmethod
+    @lru_cache(maxsize=32)
     def from_ee_feature_collection(
         cls, fc: ee.FeatureCollection, num_threads: int = -1, chunk_size: int = 5000
     ):
