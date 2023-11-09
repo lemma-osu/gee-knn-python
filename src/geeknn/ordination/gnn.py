@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Callable
+
 import numpy as np
 from sknnr.transformers import CCATransformer
 
@@ -7,13 +9,9 @@ from ._base import Transformed
 
 
 class GNN(Transformed):
-    Y_TRANSFORM_FUNC = {
-        "SQRT": lambda x: np.sqrt(x),
-        "LOG": lambda x: np.log(x),
-        "NONE": lambda x: x,
-    }
-
-    def __init__(self, *, y_transform: str = "SQRT", n_components: int = 8, **kwargs):
+    def __init__(
+        self, *, y_transform: Callable | None = None, n_components: int = 8, **kwargs
+    ):
         self.y_transform = y_transform
         self.n_components = n_components
         super().__init__(**kwargs)
@@ -24,7 +22,7 @@ class GNN(Transformed):
     def _get_modeling_X_y(self, *, client_fc, X_columns, y_columns):
         X = client_fc.properties_to_array(X_columns)
         y = client_fc.properties_to_array(y_columns)
-        y = self.Y_TRANSFORM_FUNC[self.y_transform](y)
+        y = y if self.y_transform is None else self.y_transform(y)
         return X, y
 
     def _get_X_means(self) -> list[float]:

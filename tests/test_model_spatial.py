@@ -1,4 +1,5 @@
 import ee
+import numpy as np
 import pytest
 
 from geeknn.ordination import GNN, MSN, Euclidean, Mahalanobis, Raw
@@ -8,7 +9,7 @@ ESTIMATOR_PARAMETERS = {
     "euc": (Euclidean, {}, 359998),
     "mah": (Mahalanobis, {}, 359710),
     "msn": (MSN, {}, 359828),
-    "gnn": (GNN, {"y_transform": "SQRT", "n_components": 16}, 352272),
+    "gnn": (GNN, {"y_transform": np.sqrt, "n_components": 16}, 352272),
 }
 
 
