@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from sknnr.transformers import CCorATransformer
 
-from ._base import Transformed
+from ._base import TransformedKNNClassifier
 
 
-class MSN(Transformed):
+class MSNClassifier(TransformedKNNClassifier):
     def _get_transformer(self):
         return CCorATransformer()
 

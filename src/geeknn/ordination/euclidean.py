@@ -3,10 +3,10 @@ from __future__ import annotations
 import numpy as np
 from sknnr.transformers import StandardScalerWithDOF
 
-from ._base import Transformed
+from ._base import TransformedKNNClassifier
 
 
-class Euclidean(Transformed):
+class EuclideanKNNClassifier(TransformedKNNClassifier):
     def _get_transformer(self):
         return StandardScalerWithDOF(ddof=1)
 

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from sknnr.transformers import MahalanobisTransformer
 
-from ._base import Transformed
+from ._base import TransformedKNNClassifier
 
 
-class Mahalanobis(Transformed):
+class MahalanobisKNNClassifier(TransformedKNNClassifier):
     def _get_transformer(self):
         return MahalanobisTransformer()
 

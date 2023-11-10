@@ -2,14 +2,20 @@ import ee
 import numpy as np
 import pytest
 
-from geeknn.ordination import GNN, MSN, Euclidean, Mahalanobis, Raw
+from geeknn.ordination import (
+    EuclideanKNNClassifier,
+    GNNClassifier,
+    MahalanobisKNNClassifier,
+    MSNClassifier,
+    RawKNNClassifier,
+)
 
 ESTIMATOR_PARAMETERS = {
-    "raw": (Raw, {}, 360000),
-    "euc": (Euclidean, {}, 359998),
-    "mah": (Mahalanobis, {}, 359710),
-    "msn": (MSN, {}, 359828),
-    "gnn": (GNN, {"y_transform": np.sqrt, "n_components": 16}, 352272),
+    "raw": (RawKNNClassifier, {}, 360000),
+    "euc": (EuclideanKNNClassifier, {}, 359998),
+    "mah": (MahalanobisKNNClassifier, {}, 359710),
+    "msn": (MSNClassifier, {}, 359828),
+    "gnn": (GNNClassifier, {"y_transform": np.sqrt, "n_components": 16}, 352272),
 }
 
 

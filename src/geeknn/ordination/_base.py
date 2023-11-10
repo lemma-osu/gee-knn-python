@@ -74,7 +74,7 @@ class FeatureCollection(BaseModel):
         return cls(**info)
 
 
-class Raw:
+class RawKNNClassifier:
     def __init__(self, k: int = 1, max_duplicates: int = 5):
         self.k = k
         self.max_duplicates = max_duplicates
@@ -188,7 +188,7 @@ class Raw:
         return get_k_neighbors(neighbor_fc, self.k)
 
 
-class Transformed(Raw, ABC):
+class TransformedKNNClassifier(RawKNNClassifier, ABC):
     """Base class for estimators that require transforming the input data."""
 
     @abstractmethod

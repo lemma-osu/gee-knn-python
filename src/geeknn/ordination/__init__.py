@@ -1,7 +1,13 @@
-from ._base import Raw
-from .euclidean import Euclidean
-from .gnn import GNN
-from .mahalanobis import Mahalanobis
-from .msn import MSN
+from ._base import RawKNNClassifier
+from .euclidean import EuclideanKNNClassifier
+from .gnn import GNNClassifier
+from .mahalanobis import MahalanobisKNNClassifier
+from .msn import MSNClassifier
 
-__all__ = ["Raw", "Euclidean", "Mahalanobis", "MSN", "GNN"]
+__all__ = [
+    "RawKNNClassifier",
+    "EuclideanKNNClassifier",
+    "MahalanobisKNNClassifier",
+    "MSNClassifier",
+    "GNNClassifier",
+]

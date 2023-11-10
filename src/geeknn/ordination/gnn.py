@@ -5,10 +5,10 @@ from typing import Callable
 import numpy as np
 from sknnr.transformers import CCATransformer
 
-from ._base import Transformed
+from ._base import TransformedKNNClassifier
 
 
-class GNN(Transformed):
+class GNNClassifier(TransformedKNNClassifier):
     def __init__(
         self, *, y_transform: Callable | None = None, n_components: int = 8, **kwargs
     ):
