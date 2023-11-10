@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from geeknn.ordination import (
+from geeknn import (
     EuclideanKNNClassifier,
     GNNClassifier,
     MahalanobisKNNClassifier,

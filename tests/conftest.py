@@ -1,7 +1,7 @@
 import ee
 import pytest
 
-from geeknn.ordination.utils import Colocation
+from geeknn.utils import Colocation
 
 ee.Initialize()
 
