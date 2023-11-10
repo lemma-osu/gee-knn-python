@@ -271,6 +271,35 @@ class TransformedKNNClassifier(RawKNNClassifier, ABC):
 
     @singledispatchmethod
     def predict(self, args, **kwargs):
+        """
+        Predict nearest neighbors based on the type of the first argument.
+
+        Parameters:
+        - arg: The first argument to predict, which can be either an ee.Image or
+          ee.FeatureCollection
+        - **kwargs: Additional keyword arguments to pass to the predict method
+
+        Dispatched Types:
+        - ee.Image: Predict the nearest neighbors for the given covariate image.
+          - Additional keyword arguments:
+            - mode: The mode to use for the classifier.  Either "CLASSIFICATION"
+              or "REGRESSION".
+
+        - ee.FeatureCollection: Predict the nearest neighbors for the given covariate
+          feature collection.
+          - Additional keyword arguments:
+            - colocation_obj: A Colocation object used to filter out neighbors that
+              are not independent.
+
+        Returns:
+        - ee.Image: An image with k bands, where each band is the ID of the kth nearest
+          neighbor.
+
+        or
+
+        - ee.FeatureCollection: A feature collection with k properties, where each
+          property is the ID of the kth nearest neighbor.
+        """
         raise NotImplementedError
 
     @predict.register
