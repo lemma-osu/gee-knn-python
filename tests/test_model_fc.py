@@ -1,42 +1,27 @@
+import numpy as np
 import pytest
 
-from geeknn.ordination import GNN, MSN, Euclidean, Mahalanobis, Raw
-from geeknn.ordination.utils import Colocation
-
-from .setup import get_colocation_fc, get_training_data
+from geeknn import (
+    EuclideanKNNClassifier,
+    GNNClassifier,
+    MahalanobisKNNClassifier,
+    MSNClassifier,
+    RawKNNClassifier,
+)
 
 ESTIMATOR_PARAMETERS = {
-    "raw": (Raw, {}),
-    "euc": (Euclidean, {}),
-    "mah": (Mahalanobis, {}),
-    "msn": (MSN, {}),
-    "gnn": (GNN, {"spp_transform": "SQRT", "num_cca_axes": 16}),
+    "raw": (RawKNNClassifier, {}),
+    "euc": (EuclideanKNNClassifier, {}),
+    "mah": (MahalanobisKNNClassifier, {}),
+    "msn": (MSNClassifier, {}),
+    "gnn": (GNNClassifier, {"y_transform": np.sqrt, "n_components": 16}),
 }
-
-
-@pytest.fixture()
-def training_data():
-    return get_training_data()
-
-
-@pytest.fixture()
-def colocation_obj():
-    colocation_fc = get_colocation_fc()
-    return Colocation(fc=colocation_fc, location_field="LOC_ID", plot_field="FCID")
-
-
-@pytest.fixture()
-def observed_ids(training_data):
-    return training_data["fc"].limit(10).aggregate_array("FCID").getInfo()
 
 
 def run_method(kls, options, training_data, colocation_obj=None):
     """Run prediction in feature collection mode for the first 10 features"""
     model = kls(**options).train(**training_data)
-    return model.predict_fc(
-        fc=training_data["fc"].limit(10),
-        colocation_obj=colocation_obj,
-    )
+    return model.predict(training_data["fc"].limit(10), colocation_obj=colocation_obj)
 
 
 @pytest.mark.parametrize(
