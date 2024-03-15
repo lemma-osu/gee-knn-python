@@ -41,6 +41,7 @@ def run_method(kls, options, training_data, X_image, check_image):
     )
 
 
+@pytest.mark.slow()
 @pytest.mark.parametrize(
     "estimator_parameter",
     ESTIMATOR_PARAMETERS.items(),
