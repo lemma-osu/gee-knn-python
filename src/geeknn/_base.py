@@ -26,7 +26,7 @@ class Feature(BaseModel):
     """Client-side proxy for ee.Feature object."""
 
     type: str
-    geometry: Optional[Geometry]  # noqa: UP007
+    geometry: Optional[Geometry] = None  # noqa: UP007
     id: str
     properties: dict[str, Any]
 
@@ -42,9 +42,9 @@ class FeatureCollection(BaseModel):
 
     type: str
     columns: dict[str, Any]
-    version: Optional[int]  # noqa: UP007
-    id: Optional[str]  # noqa: UP007
-    properties: Optional[dict[str, Any]]  # noqa: UP007
+    version: Optional[int] = None  # noqa: UP007
+    id: Optional[str] = None  # noqa: UP007
+    properties: Optional[dict[str, Any]] = None  # noqa: UP007
     features: list[Feature]
 
     def aggregate_array(self, property: str) -> NDArray:
