@@ -24,6 +24,7 @@ def run_method(kls, options, training_data, colocation_obj=None):
     return model.predict(training_data["fc"].limit(10), colocation_obj=colocation_obj)
 
 
+@pytest.mark.slow()
 @pytest.mark.parametrize(
     "estimator_parameter",
     ESTIMATOR_PARAMETERS.values(),
@@ -40,6 +41,7 @@ def test_dependent(estimator_parameter, k, training_data, observed_ids):
     assert all(x == y for x, y in zip(observed_ids, prd))
 
 
+@pytest.mark.slow()
 @pytest.mark.parametrize(
     "estimator_parameter",
     ESTIMATOR_PARAMETERS.values(),
