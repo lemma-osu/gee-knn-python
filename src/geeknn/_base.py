@@ -168,7 +168,7 @@ class RawKNNClassifier:
     def _(
         self,
         fc: ee.FeatureCollection,
-        colocation_obj: Colocation | None = None,
+        colocation_obj: Optional[Colocation] = None,  # noqa: UP007
         num_threads: int = -1,
         chunk_size: int = 500,
     ):
@@ -201,7 +201,7 @@ class RawKNNClassifier:
         self,
         fc: ee.FeatureCollection,
         ids: NDArray,
-        colocation_obj: Colocation | None = None,
+        colocation_obj: Optional[Colocation] = None,  # noqa: UP007
         num_threads: int = -1,
         chunk_size: int = 500,
     ):
