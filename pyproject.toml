@@ -16,7 +16,7 @@ dependencies = [
     "numpy",
     "pydantic",
     "scikit-learn",
-    "sknnr @ git+https://github.com/lemma-osu/scikit-learn-knn-regression",
+    "sknnr",
 ]
 
 [project.urls]
