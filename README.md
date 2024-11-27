@@ -20,4 +20,4 @@ pip install git+https://github.com/lemma-osu/gee-knn-python@main
 - numpy
 - pydantic
 - scikit-learn
-- scikit-learn-knn-regression @ git+https://github.com/lemma-osu/scikit-learn-knn-regression@main
+- sknnr @ git+https://github.com/lemma-osu/scikit-learn-knn-regression@main
